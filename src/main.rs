@@ -1,23 +1,13 @@
-mod renaming;
-pub use renaming::*;
+mod applied_id;
+pub use applied_id::*;
 
 mod tst;
 pub use tst::*;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-struct Id(usize);
-
-// expresses m*a, where
-// - a :: X
-// - m :: X -> Y
-// - forall x :: X, m[x] :: Y
-#[derive(PartialEq, Eq, Clone)]
-struct RenamedId(/*m*/Renaming, /*a*/Id);
-
 struct Class {
     group: (),
     arity: usize,
-    leader: RenamedId, // equivalent to this Id.
+    leader: AppliedId, // AppliedId equivalent to this Id.
 }
 
 struct SlottedUF {
@@ -28,84 +18,76 @@ impl SlottedUF {
     fn new() -> Self { Self { classes: Vec::new() } }
 
     fn alloc(&mut self, arity: usize) -> Id {
-        let m = Renaming::identity(arity);
+        let m = (0..arity).map(Slot).collect();
         let i = Id(self.classes.len());
         self.classes.push(Class {
             group: (),
             arity,
-            leader: RenamedId(m, i),
+            leader: AppliedId(i, m),
         });
         i
     }
 
-    fn find(&self, RenamedId(mut m, mut a): RenamedId) -> RenamedId {
+    fn find(&self, AppliedId(mut a, mut args_a): AppliedId) -> AppliedId {
         loop {
-            let RenamedId(mb, b) = &self.classes[a.0].leader;
-            if a == *b { return RenamedId(m, a) }
+            let AppliedId(b, args_b) = &self.classes[a.0].leader;
+            if a == *b { return AppliedId(a, args_a) }
 
-            // a :: A
-            // m :: A -> P
-            // b :: B
-            // mb :: B -> A
-
-            // mab :: B -> P
-            let mab = Renaming(mb.0.iter().map(|x| m.0[x.0]).collect());
-            RenamedId(m, a) = RenamedId(mab, *b);
+            let args_ab = args_b.iter().map(|x| args_a[x.0]).collect();
+            AppliedId(a, args_a) = AppliedId(*b, args_ab);
         }
     }
 
-    fn union(&mut self, x: RenamedId, y: RenamedId) {
-        let RenamedId(mut mx, mut x) = self.find(x);
-        let RenamedId(mut my, mut y) = self.find(y);
+    fn union(&mut self, x: AppliedId, y: AppliedId) {
+        let AppliedId(mut x, mut args_x) = self.find(x);
+        let AppliedId(mut y, mut args_y) = self.find(y);
 
         loop {
             let mut changed = false;
-            for a in mx.0.iter() {
-                if !my.0.contains(&a) { self.drop_slot(RenamedId(mx.clone(), x), *a); changed = true; }
+            for a in args_x.iter() {
+                if !args_y.contains(&a) { self.drop_slot(AppliedId(x, args_x.clone()), *a); changed = true; }
             }
-            for a in my.0.iter() {
-                if !mx.0.contains(&a) { self.drop_slot(RenamedId(my.clone(), y), *a); changed = true; }
+            for a in args_y.iter() {
+                if !args_x.contains(&a) { self.drop_slot(AppliedId(y, args_y.clone()), *a); changed = true; }
             }
             if !changed { break }
-            RenamedId(mx, x) = self.find(RenamedId(mx, x));
-            RenamedId(my, y) = self.find(RenamedId(my, y));
+            AppliedId(x, args_x) = self.find(AppliedId(x, args_x));
+            AppliedId(y, args_y) = self.find(AppliedId(y, args_y));
         }
 
         if x == y {
-            if mx == my { return }
+            if args_x == args_y { return }
             else { panic!("symmetries unsupported!") }
         } else {
-            // mx * x = my * y
-            // -> x = mx⁻¹ * my * y
             let y_arity = self.classes[y.0].arity;
 
-            let mut out = Renaming::identity(y_arity);
+            let mut out: Box<[Slot]> = (0..y_arity).map(Slot).collect();
             for i in 0..y_arity {
-                let aa = my.0[i];
+                let aa = args_y[i];
                 // TODO is there a more efficient way?
-                let aa = Slot(mx.0.iter().position(|j| *j == aa).unwrap());
-                out.0[i] = aa;
+                let aa = Slot(args_x.iter().position(|j| *j == aa).unwrap());
+                out[i] = aa;
             }
-            self.classes[x.0].leader = RenamedId(out, y);
+            self.classes[x.0].leader = AppliedId(y, out);
         }
     }
 
-    fn drop_slot(&mut self, x: RenamedId, s: Slot) {
-        assert!(x.0.0.contains(&s));
+    fn drop_slot(&mut self, AppliedId(x, args_x): AppliedId, s: Slot) {
+        assert!(args_x.contains(&s));
 
-        let x = self.find(x);
-        let Some(p) = x.0.0.iter().position(|a| *a == s) else { return /*already dropped in the past*/ };
-        self.drop_leader_slot(x.1, Slot(p));
+        let AppliedId(x, args_x) = self.find(AppliedId(x, args_x));
+        let Some(p) = args_x.iter().position(|a| *a == s) else { return /*already dropped in the past*/ };
+        self.drop_leader_slot(x, Slot(p));
     }
 
     fn drop_leader_slot(&mut self, x: Id, s: Slot) {
         let arity = self.classes[x.0].arity;
         let new = self.alloc(arity - 1);
-        let m = Renaming((0..s.0).chain((s.0 + 1)..arity).map(Slot).collect());
-        self.classes[x.0].leader = RenamedId(m, new);
+        let args = (0..s.0).chain((s.0 + 1)..arity).map(Slot).collect();
+        self.classes[x.0].leader = AppliedId(new, args);
     }
 
-    fn is_equal(&self, x: RenamedId, y: RenamedId) -> bool {
+    fn is_equal(&self, x: AppliedId, y: AppliedId) -> bool {
         // NOTE incomplete due to groups!
         let x = self.find(x);
         let y = self.find(y);

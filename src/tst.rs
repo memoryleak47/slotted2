@@ -4,13 +4,13 @@ use crate::*;
 fn t1() {
     let mut suf = SlottedUF::new();
     let aid = suf.alloc(3);
-    let l = RenamedId(Renaming(Box::new([Slot(10), Slot(11), Slot(12)])), aid);
-    let r = RenamedId(Renaming(Box::new([Slot(110), Slot(11), Slot(112)])), aid);
+    let l = AppliedId(aid, Box::new([Slot(10), Slot(11), Slot(12)]));
+    let r = AppliedId(aid, Box::new([Slot(110), Slot(11), Slot(112)]));
     suf.union(l, r);
 
-    let z = RenamedId(Renaming(Box::new([Slot(20), Slot(21), Slot(22)])), aid);
-    let RenamedId(m, _) = suf.find(z);
-    assert!(&*m.0 == [Slot(21)]);
+    let z = AppliedId(aid, Box::new([Slot(20), Slot(21), Slot(22)]));
+    let AppliedId(_, args) = suf.find(z);
+    assert!(&*args == [Slot(21)]);
 }
 
 #[test]
@@ -19,15 +19,15 @@ fn t2() {
     let aid = suf.alloc(2);
     let bid = suf.alloc(2);
 
-    let a = RenamedId(Renaming(Box::new([Slot(300), Slot(400)])), aid);
-    let b = RenamedId(Renaming(Box::new([Slot(400), Slot(300)])), bid);
+    let a = AppliedId(aid, Box::new([Slot(300), Slot(400)]));
+    let b = AppliedId(bid, Box::new([Slot(400), Slot(300)]));
     suf.union(a, b);
 
-    let c = RenamedId(Renaming(Box::new([Slot(500), Slot(600)])), aid);
-    let d = RenamedId(Renaming(Box::new([Slot(600), Slot(500)])), bid);
+    let c = AppliedId(aid, Box::new([Slot(500), Slot(600)]));
+    let d = AppliedId(bid, Box::new([Slot(600), Slot(500)]));
     assert!(suf.is_equal(c, d));
 
-    let e = RenamedId(Renaming(Box::new([Slot(1000), Slot(2000)])), aid);
-    let f = RenamedId(Renaming(Box::new([Slot(1000), Slot(2000)])), bid);
+    let e = AppliedId(aid, Box::new([Slot(1000), Slot(2000)]));
+    let f = AppliedId(bid, Box::new([Slot(1000), Slot(2000)]));
     assert!(!suf.is_equal(e, f));
 }
