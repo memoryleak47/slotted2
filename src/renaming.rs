@@ -1,10 +1,10 @@
 use crate::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Slot(usize);
+pub struct Slot(pub usize);
 
 #[derive(PartialEq, Eq, Clone)]
-pub struct Renaming(Box<[Slot]>);
+pub struct Renaming(pub Box<[Slot]>);
 
 impl Renaming {
     pub fn identity(arity: usize) -> Self {
