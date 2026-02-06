@@ -16,17 +16,14 @@ fn t1() {
 #[test]
 fn t2() {
     let mut suf = SlottedUF::new();
-    let aid = suf.alloc(3);
-    let bid = suf.alloc(3);
+    let aid = suf.alloc(2);
+    let bid = suf.alloc(2);
 
-    let a = RenamedId(Renaming::identity(3), aid);
-    let b = RenamedId(Renaming::identity(3), bid);
-    suf.union(a.clone(), b.clone());
-    assert!(suf.is_equal(a.clone(), b.clone()));
+    let a = RenamedId(Renaming(Box::new([Slot(300), Slot(400)])), aid);
+    let b = RenamedId(Renaming(Box::new([Slot(400), Slot(300)])), bid);
+    suf.union(a, b);
 
-    let x = RenamedId(Renaming(Box::new([Slot(30), Slot(31), Slot(32)])), aid);
-    let x = suf.find(x);
-    let y = RenamedId(Renaming(Box::new([Slot(30), Slot(31), Slot(32)])), bid);
-    let y = suf.find(y);
-    assert!(x.1 == y.1);
+    let c = RenamedId(Renaming(Box::new([Slot(500), Slot(600)])), aid);
+    let d = RenamedId(Renaming(Box::new([Slot(600), Slot(500)])), bid);
+    assert!(suf.is_equal(c, d));
 }

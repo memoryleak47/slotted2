@@ -77,7 +77,16 @@ impl SlottedUF {
         } else {
             // mx * x = my * y
             // -> x = mx⁻¹ * my * y
-            self.classes[x.0].leader = RenamedId(mx.revcompose(&my), y);
+            let y_arity = self.classes[y.0].arity;
+
+            let mut out = Renaming::identity(y_arity);
+            for i in 0..y_arity {
+                let aa = my.0[i];
+                // TODO is there a more efficient way?
+                let aa = Slot(mx.0.iter().position(|j| *j == aa).unwrap());
+                out.0[i] = aa;
+            }
+            self.classes[x.0].leader = RenamedId(out, y);
         }
     }
 
