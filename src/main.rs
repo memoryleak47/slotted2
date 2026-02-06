@@ -26,8 +26,13 @@ impl Renaming {
     }
 
     // m1⁻¹ * m2
+    // (y, x) in m1 && (y, z) in m2 -> (x, z) in m1⁻¹ * m2
     fn revcompose(&self, m2: &Renaming) -> Renaming {
-        self.rev().compose(m2)
+        let mut out = Renaming::identity(self.0.len());
+        for (x, z) in self.0.iter().zip(m2.0.iter()) {
+            out.0[x.0] = *z;
+        }
+        out
     }
 
     fn iter(&self) -> impl Iterator<Item=(Slot, Slot)> {
