@@ -22,8 +22,11 @@ fn t2() {
     let a = RenamedId(Renaming::identity(3), aid);
     let b = RenamedId(Renaming::identity(3), bid);
     suf.union(a.clone(), b.clone());
-    println!("{}", suf.is_equal(a.clone(), b.clone()));
-    let a = RenamedId(Renaming(Box::new([Slot(30), Slot(31), Slot(32)])), aid);
-    let a = suf.find(a);
-}
+    assert!(suf.is_equal(a.clone(), b.clone()));
 
+    let x = RenamedId(Renaming(Box::new([Slot(30), Slot(31), Slot(32)])), aid);
+    let x = suf.find(x);
+    let y = RenamedId(Renaming(Box::new([Slot(30), Slot(31), Slot(32)])), bid);
+    let y = suf.find(y);
+    assert!(x.1 == y.1);
+}
