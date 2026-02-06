@@ -1,6 +1,9 @@
 mod renaming;
 pub use renaming::*;
 
+mod tst;
+pub use tst::*;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct Id(usize);
 
@@ -37,9 +40,18 @@ impl SlottedUF {
 
     fn find(&self, RenamedId(mut m, mut a): RenamedId) -> RenamedId {
         loop {
-            let RenamedId(m2, a2) = m.mul(&self.classes[a.0].leader);
-            if a == a2 { return RenamedId(m, a) }
-            RenamedId(m, a) = RenamedId(m2, a2);
+            let RenamedId(mb, b) = &self.classes[a.0].leader;
+            if a == *b { return RenamedId(m, a) }
+
+            // a :: A
+            // m :: A -> P
+            // b :: B
+            // mb :: B -> A
+
+            // mab :: B -> P
+            let b_arity = self.classes[b.0].arity;
+            let mab = Renaming(mb.0.iter().map(|x| m.0[x.0]).collect());
+            RenamedId(m, a) = RenamedId(mab, *b);
         }
     }
 
@@ -91,13 +103,4 @@ impl SlottedUF {
     }
 }
 
-fn main() {
-    let mut suf = SlottedUF::new();
-    let a = suf.alloc(3);
-    let b = suf.alloc(3);
-
-    let a = RenamedId(Renaming::identity(3), a);
-    let b = RenamedId(Renaming::identity(3), b);
-    suf.union(a.clone(), b.clone());
-    println!("{}", suf.is_equal(a.clone(), b.clone()));
-}
+fn main() {}
