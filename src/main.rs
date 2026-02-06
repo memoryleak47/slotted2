@@ -49,7 +49,6 @@ impl SlottedUF {
             // mb :: B -> A
 
             // mab :: B -> P
-            let b_arity = self.classes[b.0].arity;
             let mab = Renaming(mb.0.iter().map(|x| m.0[x.0]).collect());
             RenamedId(m, a) = RenamedId(mab, *b);
         }
