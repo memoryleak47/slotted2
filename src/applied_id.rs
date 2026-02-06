@@ -13,6 +13,15 @@ pub struct AppliedId {
     pub args: Box<[Slot]>,
 }
 
+impl AppliedId {
+    pub fn mk(id: Id, args: impl IntoIterator<Item=Slot>) -> Self {
+        AppliedId {
+            id,
+            args: args.into_iter().collect(),
+        }
+    }
+}
+
 mod fmt {
     use crate::*;
     use std::fmt::*;
