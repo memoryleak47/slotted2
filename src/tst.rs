@@ -4,13 +4,13 @@ use crate::*;
 fn t1() {
     let mut suf = SlottedUF::new();
     let aid = suf.alloc(3);
-    let l = RenamedId(Renaming(Box::new([Slot(30), Slot(31), Slot(32)])), aid);
-    let r = RenamedId(Renaming(Box::new([Slot(12), Slot(31), Slot(42)])), aid);
+    let l = RenamedId(Renaming(Box::new([Slot(10), Slot(11), Slot(12)])), aid);
+    let r = RenamedId(Renaming(Box::new([Slot(110), Slot(11), Slot(112)])), aid);
     suf.union(l, r);
 
-    let z = RenamedId(Renaming(Box::new([Slot(30), Slot(31), Slot(32)])), aid);
+    let z = RenamedId(Renaming(Box::new([Slot(20), Slot(21), Slot(22)])), aid);
     let RenamedId(m, _) = suf.find(z);
-    assert!(m.0.len() == 1);
+    assert!(&*m.0 == [Slot(21)]);
 }
 
 #[test]
