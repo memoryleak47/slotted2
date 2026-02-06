@@ -62,10 +62,10 @@ impl SlottedUF {
         loop {
             let mut changed = false;
             for a in mx.0.iter() {
-                if !my.0.contains(&a) { self.drop_slot(RenamedId(my.clone(), y), *a); changed = true; }
+                if !my.0.contains(&a) { self.drop_slot(RenamedId(mx.clone(), x), *a); changed = true; }
             }
             for a in my.0.iter() {
-                if !mx.0.contains(&a) { self.drop_slot(RenamedId(mx.clone(), x), *a); changed = true; }
+                if !mx.0.contains(&a) { self.drop_slot(RenamedId(my.clone(), y), *a); changed = true; }
             }
             if !changed { break }
             RenamedId(mx, x) = self.find(RenamedId(mx, x));
@@ -83,8 +83,10 @@ impl SlottedUF {
     }
 
     fn drop_slot(&mut self, x: RenamedId, s: Slot) {
+        assert!(x.0.0.contains(&s));
+
         let x = self.find(x);
-        let p = x.0.0.iter().position(|a| *a == s).unwrap();
+        let Some(p) = x.0.0.iter().position(|a| *a == s) else { return /*already dropped in the past*/ };
         self.drop_leader_slot(x.1, Slot(p));
     }
 
