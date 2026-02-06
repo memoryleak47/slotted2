@@ -18,73 +18,73 @@ impl SlottedUF {
     fn new() -> Self { Self { classes: Vec::new() } }
 
     fn alloc(&mut self, arity: usize) -> Id {
-        let m = (0..arity).map(Slot).collect();
-        let i = Id(self.classes.len());
+        let args = (0..arity).map(Slot).collect();
+        let id = Id(self.classes.len());
         self.classes.push(Class {
             group: (),
             arity,
-            leader: AppliedId(i, m),
+            leader: AppliedId { id, args },
         });
-        i
+        id
     }
 
-    fn find(&self, AppliedId(mut a, mut args_a): AppliedId) -> AppliedId {
+    fn find(&self, mut a: AppliedId) -> AppliedId {
         loop {
-            let AppliedId(b, args_b) = &self.classes[a.0].leader;
-            if a == *b { return AppliedId(a, args_a) }
+            let b = &self.classes[a.id.0].leader;
+            if a.id == b.id { return a }
 
-            let args_ab = args_b.iter().map(|x| args_a[x.0]).collect();
-            AppliedId(a, args_a) = AppliedId(*b, args_ab);
+            let args = b.args.iter().map(|x| a.args[x.0]).collect();
+            a = AppliedId { id: b.id, args };
         }
     }
 
     fn union(&mut self, x: AppliedId, y: AppliedId) {
-        let AppliedId(mut x, mut args_x) = self.find(x);
-        let AppliedId(mut y, mut args_y) = self.find(y);
+        let mut x = self.find(x);
+        let mut y = self.find(y);
 
         loop {
             let mut changed = false;
-            for a in args_x.iter() {
-                if !args_y.contains(&a) { self.drop_slot(AppliedId(x, args_x.clone()), *a); changed = true; }
+            for a in x.args.iter() {
+                if !y.args.contains(&a) { self.drop_slot(x.clone(), *a); changed = true; }
             }
-            for a in args_y.iter() {
-                if !args_x.contains(&a) { self.drop_slot(AppliedId(y, args_y.clone()), *a); changed = true; }
+            for a in y.args.iter() {
+                if !x.args.contains(&a) { self.drop_slot(y.clone(), *a); changed = true; }
             }
             if !changed { break }
-            AppliedId(x, args_x) = self.find(AppliedId(x, args_x));
-            AppliedId(y, args_y) = self.find(AppliedId(y, args_y));
+            x = self.find(x);
+            y = self.find(y);
         }
 
-        if x == y {
-            if args_x == args_y { return }
+        if x.id == y.id {
+            if x.args == y.args { return }
             else { panic!("symmetries unsupported!") }
         } else {
-            let y_arity = self.classes[y.0].arity;
+            let y_arity = self.classes[y.id.0].arity;
 
             let mut out: Box<[Slot]> = (0..y_arity).map(Slot).collect();
             for i in 0..y_arity {
-                let aa = args_y[i];
+                let aa = y.args[i];
                 // TODO is there a more efficient way?
-                let aa = Slot(args_x.iter().position(|j| *j == aa).unwrap());
+                let aa = Slot(x.args.iter().position(|j| *j == aa).unwrap());
                 out[i] = aa;
             }
-            self.classes[x.0].leader = AppliedId(y, out);
+            self.classes[x.id.0].leader = AppliedId { id: y.id, args: out };
         }
     }
 
-    fn drop_slot(&mut self, AppliedId(x, args_x): AppliedId, s: Slot) {
-        assert!(args_x.contains(&s));
+    fn drop_slot(&mut self, x: AppliedId, s: Slot) {
+        assert!(x.args.contains(&s));
 
-        let AppliedId(x, args_x) = self.find(AppliedId(x, args_x));
-        let Some(p) = args_x.iter().position(|a| *a == s) else { return /*already dropped in the past*/ };
-        self.drop_leader_slot(x, Slot(p));
+        let x = self.find(x);
+        let Some(p) = x.args.iter().position(|a| *a == s) else { return /*already dropped in the past*/ };
+        self.drop_leader_slot(x.id, Slot(p));
     }
 
     fn drop_leader_slot(&mut self, x: Id, s: Slot) {
         let arity = self.classes[x.0].arity;
         let new = self.alloc(arity - 1);
         let args = (0..s.0).chain((s.0 + 1)..arity).map(Slot).collect();
-        self.classes[x.0].leader = AppliedId(new, args);
+        self.classes[x.0].leader = AppliedId { id: new, args };
     }
 
     fn is_equal(&self, x: AppliedId, y: AppliedId) -> bool {

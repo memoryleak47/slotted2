@@ -8,7 +8,10 @@ pub struct Slot(pub usize);
 
 #[derive(PartialEq, Eq, Clone)]
 // a[x1, ..., xn]
-pub struct AppliedId(pub Id, pub Box<[Slot]>);
+pub struct AppliedId {
+    pub id: Id,
+    pub args: Box<[Slot]>,
+}
 
 mod fmt {
     use crate::*;
@@ -24,7 +27,7 @@ mod fmt {
 
     impl Display for AppliedId {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            let AppliedId(x, args) = self;
+            let AppliedId { id: x, args } = self;
 
             write!(f, "{x}")?;
             if args.is_empty() { return Ok(()) }
