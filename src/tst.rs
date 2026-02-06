@@ -26,4 +26,8 @@ fn t2() {
     let c = RenamedId(Renaming(Box::new([Slot(500), Slot(600)])), aid);
     let d = RenamedId(Renaming(Box::new([Slot(600), Slot(500)])), bid);
     assert!(suf.is_equal(c, d));
+
+    let e = RenamedId(Renaming(Box::new([Slot(1000), Slot(2000)])), aid);
+    let f = RenamedId(Renaming(Box::new([Slot(1000), Slot(2000)])), bid);
+    assert!(!suf.is_equal(e, f));
 }
