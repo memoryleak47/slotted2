@@ -1,4 +1,5 @@
 use crate::*;
+use std::rc::Rc;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Id(pub usize);
@@ -10,7 +11,7 @@ pub struct Slot(pub usize);
 // a[x1, ..., xn]
 pub struct AppliedId {
     pub id: Id,
-    pub args: Box<[Slot]>,
+    pub args: Rc<[Slot]>,
 }
 
 impl AppliedId {

@@ -68,7 +68,7 @@ impl SlottedUF {
                 let aa = Slot(x.args.iter().position(|j| *j == aa).unwrap());
                 out[i] = aa;
             }
-            self.classes[x.id.0].leader = AppliedId { id: y.id, args: out };
+            self.classes[x.id.0].leader = AppliedId { id: y.id, args: out.into() };
         }
     }
 
